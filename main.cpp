@@ -3,11 +3,14 @@
 #include <string>
 #include <unordered_map>
 #include <limits>
+#include <vector>
 
 #ifdef _WIN32
     #define CLEAR_COMMAND "cls"
+    #define PAUSE_COMMAND "pause"
 #else
     #define CLEAR_COMMAND "clear"
+    #define PAUSE_COMMAND "read"
 #endif
 
 using namespace std;
@@ -55,7 +58,7 @@ int getValidIntegerInput(const string& prompt) {
     cout << prompt;
 
     while (!(cin >> value)) {
-        cout << "Please enter a valid integer: ";
+        cout << "Please enter your selection's number: ";
         cin.clear(); // clears error flags
         cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discards the invalid input
     }
@@ -68,21 +71,53 @@ int getValidIntegerInput(const string& prompt) {
  * @param prompt The message to prompt the user.
  * @return Valid string input.
 */
-string getValidStringInput(const string& prompt) {
+string getValidStringInput(const string& prompt) 
+{
     string input;
     cout << prompt;
     getline(cin >> ws, input); // Read the whole line including spaces
-    input = capitalizeFirstLetter(input);
+    input = capitalizeFirstLetter(input);   // Capitalizes the first letter of each word within the string
     return input;
 }
 
+void calculateGPA(unordered_map<string, unordered_map<string, unordered_map<string, string> > >& passed_unordered_map)
+{
+    if (passed_unordered_map.empty()) {
+        cout << "You have not entered any classes, please enter your classes first" << endl;
+        system(PAUSE_COMMAND);
+        return;
+    }
+
+    unordered_map<string, unordered_map<string, unordered_map<string, string> > >::iterator semester;
+    unordered_map<string, unordered_map<string, string> >::iterator classes;
+
+    cout << "Which term would you like to view the GPA? To exit enter \"Quit\"" << endl;
+    cout << "-------------------------------" << endl;
+    for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+        cout << semester->first << endl;
+    }
+    cout << "-------------------------------" << endl;
+    string term = getValidStringInput("");
+
+    cout << term << endl;
+    cout << "Course          Credit Hours          Grade" << endl;
+    cout << "------------------------" << endl;
+    for (classes = passed_unordered_map[term].begin(); classes != passed_unordered_map[term].end(); classes++) {
+        cout << classes->first << "             " << classes->second["Credit Hours"] << "             " << classes->second["Grade"] << endl;
+    }
+    cout << "------------------------" << endl << endl;
+    cout << "Your GPA is: " << endl;
+}
+
 /**
- * @brief Allows the user to add or remove classes.
+ * @brief Allows the user to add or remove or modify their classes.
  * 
  * @param passed_unordered_map The unordered map representing the semester data.
 */
-void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_unordered_map) {
+void manageClasses(unordered_map<string, unordered_map<string, unordered_map<string, string> > >& passed_unordered_map) {
     int choice;
+    unordered_map<string, unordered_map<string, unordered_map<string, string> > >::iterator semester;
+    unordered_map<string, unordered_map<string, string> >::iterator classes;
 
     do {
         system(CLEAR_COMMAND);
@@ -92,17 +127,26 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
                 "(3). Modify grade\n"
                 "(4). Quit" << endl << endl;
         
-        cin >> choice;
+        choice = getValidIntegerInput("");
         switch (choice) {
             case 1:
             {
                 while(true) {
                     system(CLEAR_COMMAND);
-                    string term = getValidStringInput("Which term would you like to add a class (e.g., Spring/Fall/Summer Year)? To exit enter \"Quit\":\n");
+                    cout << "Which term would you like to add a class to? If empty, type in the term you would like to add (e.g., Spring/Fall/Summer Year). To exit enter \"Quit\"" << endl;
+                    cout << "-------------------------------" << endl;
+                    for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+                        cout << semester->first << endl;
+                    }
+                    cout << "-------------------------------" << endl << endl;
+
+                    string term = getValidStringInput("");
+
                     if (term == "Quit") { break; }
                     while (true) {
                         string course;
-                        int grade;
+                        string creditHours;
+                        string grade;
 
                         do {
                             course = getValidStringInput("Enter the name of the course you are adding: ");
@@ -111,10 +155,15 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
                             }
                         } while (passed_unordered_map[term].find(course) != passed_unordered_map[term].end());
 
-                        grade = getValidIntegerInput("Enter the grade for " + course + ": ");
+                        creditHours = getValidStringInput("Enter the credit hours for " + course + ": ");
+                        grade = getValidStringInput("Enter your letter grade for " + course + ": ");
 
-                        passed_unordered_map.insert(make_pair(term, unordered_map<string, int>()));
-                        passed_unordered_map[term].insert(make_pair(course, grade));
+                        // Insert class name
+                        passed_unordered_map[term].insert(make_pair(course, unordered_map<string, string>()));
+
+                        // Insert class info
+                        passed_unordered_map[term][course].insert(make_pair("Credit Hours", creditHours));
+                        passed_unordered_map[term][course].insert(make_pair("Grade", grade));
 
                         cout << "Would you like to enter another class? Enter 1-2" << endl;
                         cout << "(1). Yes\n"
@@ -130,7 +179,15 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
             {
                 system(CLEAR_COMMAND);
                 while(true) {
-                    string term = getValidStringInput("Which term would you like to remove a class (e.g., Spring/Fall/Summer Year)? To exit enter \"Quit\": ");
+                    cout << "Which term would you like to remove a class from? To exit enter \"Quit\"" << endl;
+                    cout << "-------------------------------" << endl;
+                    for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+                        cout << semester->first << endl;
+                    }
+                    cout << "-------------------------------" << endl << endl;
+
+                    string term = getValidStringInput("");
+
                     if (term == "Quit") { break; }
                     if (passed_unordered_map.find(term) == passed_unordered_map.end()) {
                         system(CLEAR_COMMAND);
@@ -141,17 +198,19 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
                     while (true) {
                         string course;
 
-                        unordered_map<string, int>::iterator ptr;
-
                         cout << "Class              Grade" << endl;
                         cout << "------------------------" << endl;
-                        for (ptr = passed_unordered_map[term].begin(); ptr != passed_unordered_map[term].end(); ptr++) {
-                            cout << ptr->first << "             " << ptr->second << endl;
+                        for (classes = passed_unordered_map[term].begin(); classes != passed_unordered_map[term].end(); classes++) {
+                            cout << classes->first << "             " << classes->second["Grade"] << endl;
                         }
-                        cout << "------------------------" << endl;
+                        cout << "------------------------" << endl << endl;
 
                         do {
-                            course = getValidStringInput("Enter the name of the course you are removing: ");
+                            course = getValidStringInput("Enter the name of the course you are removing. if you want to cancel type \"Cancel\": ");
+                            if (course == "Cancel") { 
+                                system(CLEAR_COMMAND); 
+                                break;
+                            }
                             if (passed_unordered_map[term].find(course) == passed_unordered_map[term].end()) {
                                 cout << "Course name does not exist for this term." << endl;
                             }
@@ -173,7 +232,15 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
             {
                 system(CLEAR_COMMAND);
                 while(true) {
-                    string term = getValidStringInput("Which term would you like to modify a class (e.g., Spring/Fall/Summer Year)? To exit enter \"Quit\": ");
+                    cout << "Which term would you like to modify? To exit enter \"Quit\"" << endl;
+                    cout << "-------------------------------" << endl;
+                    for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+                        cout << semester->first << endl;
+                    }
+                    cout << "-------------------------------" << endl;
+
+                    string term = getValidStringInput("");
+
                     if (term == "Quit") { break; }
                     if (passed_unordered_map.find(term) == passed_unordered_map.end()) {
                         system(CLEAR_COMMAND);
@@ -183,16 +250,14 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
 
                     while (true) {
                         string course;
-                        int grade;
-
-                        unordered_map<string, int>::iterator ptr;
+                        string grade;
 
                         cout << "Class              Grade" << endl;
                         cout << "------------------------" << endl;
-                        for (ptr = passed_unordered_map[term].begin(); ptr != passed_unordered_map[term].end(); ptr++) {
-                            cout << ptr->first << "             " << ptr->second << endl;
+                        for (classes = passed_unordered_map[term].begin(); classes != passed_unordered_map[term].end(); classes++) {
+                            cout << classes->first << "             " << classes->second["Grade"] << endl;
                         }
-                        cout << "------------------------" << endl;
+                        cout << "------------------------" << endl << endl;
 
                         do {
                             course = getValidStringInput("Enter the name of the course you are modifing: ");
@@ -203,15 +268,16 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
                             }
                         } while (passed_unordered_map[term].find(course) == passed_unordered_map[term].end());
 
-                        cout << "What should " + course + " grade be: ";
-                        cin >> grade;
-
-                        unordered_map<string, int>::iterator itr = passed_unordered_map[term].find(course);
-                        itr->second = grade;
+                        cout << "What should " + course + " letter grade be: ";
+                        grade = getValidStringInput("");
+                        
+                        classes = passed_unordered_map[term].find(course);
+                        classes->second["Grade"] = grade;
 
                         cout << "Would you like to remove another class? Enter 1-2" << endl;
                         cout << "(1). Yes\n"
                                 "(2). No" << endl << endl;
+                        
                         cin >> choice;
                         system(CLEAR_COMMAND);
                         if (choice == 2) { break; }
@@ -233,45 +299,111 @@ void manageClasses(unordered_map<string, unordered_map<string, int>>& passed_uno
     system(CLEAR_COMMAND);
 }
 
-void generateReport(unordered_map<string, unordered_map<string, int>>& passed_unordered_map)
+void generateReport(unordered_map<string, unordered_map<string, unordered_map<string, string> > >& passed_unordered_map)
 {
-    system(CLEAR_COMMAND);
     int choice;
+    unordered_map<string, unordered_map<string, unordered_map<string, string> > >::iterator semester;
+    unordered_map<string, unordered_map<string, string> >::iterator classes;
 
-    while (true) {
-        string term = getValidStringInput("WHich term would you like to see (e.g., Spring/Fall/Summer Year)? To exit enter \"Quit\"\n");
-        if (term == "Quit") { break; }
-
-        if (passed_unordered_map.find(term) == passed_unordered_map.end()) {
-            system(CLEAR_COMMAND);
-            cout << "You have not entered any classes for " + term + ". Please select a term you have added classes to" << endl;
-            continue;
-        }
-
-        unordered_map<string, int>::iterator ptr;
-
+    do {
         system(CLEAR_COMMAND);
-        cout << term << endl;
-        cout << "Class             Grade" << endl;
-        cout << "-------------------------------" << endl;
-        for (ptr = passed_unordered_map[term].begin(); ptr != passed_unordered_map[term].end(); ptr++) {
-            cout << ptr->first << "      " << ptr->second << endl;
-        }
-        cout << "-------------------------------" << endl;
-        cout << "Would you like to see another term? Enter 1-2\n"
-             << "(1). Yes\n"
-             << "(2). No" << endl << endl;
+        cout << "Please select what you would like to do by entering 1-5:" << endl;
+        cout << "(1). Show all classes and grades\n"
+             << "(2). Show classes and grades by term\n"
+             << "(3). Quit" << endl << endl;
+        
+        choice = getValidIntegerInput("");
 
-        cin >> choice;
-        if (choice == 2) { break; }
-        system(CLEAR_COMMAND);
-    }
+        switch (choice) {
+            case 1:
+            {
+                system(CLEAR_COMMAND);
+                if (passed_unordered_map.empty()) {
+                    cout << "You have not entered any classes please enter your classes first" << endl;
+                    system(PAUSE_COMMAND);
+                    break;
+                }
+
+                for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+                    cout << semester->first << endl;
+                    cout << "Course          Credit Hours          Grade" << endl;
+                    cout << "-------------------------------------------" << endl;
+                    for (classes = passed_unordered_map[semester->first].begin(); classes != passed_unordered_map[semester->first].end(); classes++) {
+                        cout << classes->first << "             " << classes->second["Credit Hours"] << "             " << classes->second["Grade"] << endl;
+                    }
+                    cout << "-------------------------------------------" << endl << endl;
+                }
+
+                system(PAUSE_COMMAND);
+                break;
+            }
+            case 2:
+            {
+                system(CLEAR_COMMAND);
+                if (passed_unordered_map.empty()) {
+                    cout << "You have not entered any classes, please enter your classes first" << endl;
+                    system(PAUSE_COMMAND);
+                    break;
+                }
+
+                while (true) {
+                    system(CLEAR_COMMAND);
+
+                    cout << "Which term would you like to see? To exit enter \"Quit\"" << endl;
+                    cout << "-------------------------------" << endl;
+                    for (semester = passed_unordered_map.begin(); semester != passed_unordered_map.end(); semester++) {
+                        cout << semester->first << endl;
+                    }
+                    cout << "-------------------------------" << endl << endl;
+
+                    string term = getValidStringInput("");
+                    if (term == "Quit") { break; }
+
+                    if (passed_unordered_map.find(term) == passed_unordered_map.end()) {
+                        system(CLEAR_COMMAND);
+                        cout << "You have not entered any classes for " + term + ". Please select a term you have added classes to" << endl;
+                        continue;
+                    }
+
+                    system(CLEAR_COMMAND);
+                    cout << term << endl;
+                    cout << "Course          Credit Hours          Grade" << endl;
+                    cout << "-------------------------------------------" << endl;
+                    for (classes = passed_unordered_map[term].begin(); classes != passed_unordered_map[term].end(); classes++) {
+                        cout << classes->first << "             " << classes->second["Credit Hours"] << "             " << classes->second["Grade"] << endl;
+                    }
+                    cout << "-------------------------------------------" << endl << endl;
+
+                    cout << "Would you like to see another term? Enter 1-2\n"
+                        << "(1). Yes\n"
+                        << "(2). No" << endl << endl;
+
+                    cin >> choice;
+                    if (choice == 2) { break; }
+                }
+                break;
+            }
+            case 3:
+            {
+                break;
+            }
+            default:
+            {
+                cout << "Invalid choice" << endl;
+            }
+        }
+    } while (choice != 3);
+
     system(CLEAR_COMMAND);
 }
 
 void run() {
     cout << "This is a CGPA calculator." << endl;
-    unordered_map<string, unordered_map<string, int> > semester;
+    // Grade-------------------------------------------------------------
+    // Class info (credit hours, current grade)------------------       |
+    // Class name--------------------------                     |       |
+    // Term---------                      |                     |       |
+    unordered_map<string, unordered_map<string, unordered_map<string, string> > > dataOfClasses;
 
     int choice;
     do
@@ -282,23 +414,24 @@ void run() {
              << "(2). Add/remove/modify classes and grades\n"
              << "(3). Show GPA per semester\n"
              << "(4). Show CGPA\n"
-             << "(5). Quit" << endl << endl;;
+             << "(5). Quit" << endl << endl;
         
-        cin >> choice;
+        choice = getValidIntegerInput("");
 
         switch (choice) {
             case 1:
             {
-                generateReport(semester);
+                generateReport(dataOfClasses);
                 break;
             }
             case 2:
             {
-                manageClasses(semester);
+                manageClasses(dataOfClasses);
                 break;
             }
             case 3:
             {
+                calculateGPA(dataOfClasses);
                 break;
             }
             case 4:
